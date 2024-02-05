@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Box, TextField, Button, styled, Typography } from '@mui/material';
+import { Box, TextField, Button, styled, Typography, IconButton } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import imageURL from '../DailyDrive.jpg';
 
 const Component = styled(Box)`
@@ -8,13 +10,12 @@ const Component = styled(Box)`
   box-shadow: 5px 2px 5px 2px rgb(0 0 0/0.2);
 `;
 
-const Image = styled('img')({
-    backgroundColor: '#fff',
-    width: 100,
-    margin: 'auto',
-    display: 'flex',
-    padding: '10px 0 0',
-});
+const Image = styled('img')`
+  width: 35%;
+  margin: auto;
+  display: flex;
+  padding: 5px 0 0;
+`;
 
 const Centre = styled(Box)`
   padding: 25px 35px;
@@ -35,7 +36,7 @@ const Para = styled(Typography)`
 `;
 
 const LoginButton = styled(Button)`
-    margin-top: 10px; // Fix: Change marginTop to margin-top
+    margin-top: 10px; 
     text-transform: none;
     height: 48px;
     box-shadow: 0 2px 4px 0 rgb(0 0 0 /0.2);
@@ -57,9 +58,16 @@ const signupInitialValues = {
     password: ""
 }
 
+const logInitialValues = {
+    email: "",
+    password: " "
+}
+
 const Login = () => {
     const [account, toggleAccount] = useState('login');
     const [signUp, setSignUp] = useState(signupInitialValues);
+    const [login, setLogin] = useState(logInitialValues);
+    const [showPassword, setShowPassword] = useState(false);
 
     const toggleSignup = () => {
         account === 'login' ? toggleAccount('signUp') : toggleAccount('login');
@@ -71,29 +79,64 @@ const Login = () => {
         // console.log(e.target.name, e.target.value);
     }
 
-    const signUpUser = async () => {
-        console.log(signUp);
+    const onValueChange = (e) => {
+        setLogin({ ...login, [e.target.name]: e.target.value });
+    }
 
+    const togglePasswordVisibility = () => {
+        setShowPassword((prevShowPassword) => !prevShowPassword);
+    };
+
+    const logInUser = async () => {
         try {
-            // Fetch users
+            const responsePost = await fetch(`http://localhost:8000/auth/login`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(login),
+            });
+
+            if (responsePost.ok || responsePost.status === 201) {
+                const responseData = await responsePost.json(); // Parse the response body as JSON
+
+                // Assuming responseData has properties accessToken and refreshToken
+                sessionStorage.setItem('accessToken', `Bearer ${responseData.accessToken}`);
+                sessionStorage.setItem('refreshToken', `Bearer ${responseData.refreshToken}`);
+
+                console.log("Login successful");
+            } else {
+                console.log("User does not exist");
+            }
+        } catch (error) {
+            console.error("Login", error);
+        }
+    };
+
+    const signUpUser = async () => {
+        try {
+            //Fetch users
             const responseGet = await fetch(`http://localhost:8000/auth/users`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
                 },
             });
-
-            // Register a new user
-            // Register a new user
+            //Register a new user
             const responsePost = await fetch(`http://localhost:8000/auth/register`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(signUp),
             });
 
-            console.log(responsePost);
+            //console.log(responsePost);
+            if (responsePost.ok || responsePost.status === 201) {
+                console.log('User created successfully');
+            } else {
+                console.error('Error creating user');
+            }
 
         } catch (error) {
             console.log("register", error);
@@ -107,9 +150,31 @@ const Login = () => {
                 {
                     account === "login" ?
                         <Centre>
-                            <TextField variant="standard" label="E-mail" InputLabelProps={{ style: { color: '#878787' } }} />
-                            <TextField variant="standard" label="Password" InputLabelProps={{ style: { color: '#878787' } }} />
-                            <LoginButton variant="contained">Login</LoginButton>
+                            <TextField variant="standard" onChange={(e) => onValueChange(e)} label="E-mail" name="email" InputLabelProps={{ style: { color: '#878787' } }} />
+                            <TextField
+                                variant="standard"
+                                onChange={(e) => onValueChange(e)}
+                                label="Password"
+                                name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                InputLabelProps={{ style: { color: '#878787' } }}
+                                InputProps={{
+                                    endAdornment: (
+                                        <IconButton
+                                            edge="end"
+                                            onClick={togglePasswordVisibility}
+                                            sx={{ color: '#878787' }}
+                                        >
+                                            {showPassword ? (
+                                                <VisibilityIcon />
+                                            ) : (
+                                                <VisibilityOffIcon />
+                                            )}
+                                        </IconButton>
+                                    ),
+                                }}
+                            />
+                            <LoginButton variant="contained" onClick={() => logInUser()}>Login</LoginButton>
                             <Para> or </Para>
                             <SignUpButton onClick={() => toggleSignup()}>Create an account</SignUpButton>
                         </Centre>
@@ -117,7 +182,29 @@ const Login = () => {
                         <Centre>
                             <TextField variant="standard" onChange={(e) => onInputChange(e)} name="name" label="Name" InputLabelProps={{ style: { color: '#878787' } }} />
                             <TextField variant="standard" onChange={(e) => onInputChange(e)} name="email" label="E-mail" InputLabelProps={{ style: { color: '#878787' } }} />
-                            <TextField variant="standard" onChange={(e) => onInputChange(e)} name="password" label="Password" InputLabelProps={{ style: { color: '#878787' } }} />
+                            <TextField
+                                variant="standard"
+                                onChange={(e) => onInputChange(e)}
+                                label="Password"
+                                name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                InputLabelProps={{ style: { color: '#878787' } }}
+                                InputProps={{
+                                    endAdornment: (
+                                        <IconButton
+                                            edge="end"
+                                            onClick={togglePasswordVisibility}
+                                            sx={{ color: '#878787' }}
+                                        >
+                                            {showPassword ? (
+                                                <VisibilityIcon />
+                                            ) : (
+                                                <VisibilityOffIcon />
+                                            )}
+                                        </IconButton>
+                                    ),
+                                }}
+                            />
 
                             <LoginButton onClick={() => signUpUser()} variant="contained">Sign Up</LoginButton>
                             <Para> or </Para>
