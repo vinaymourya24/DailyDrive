@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Box, TextField, Button, styled, Typography, IconButton } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import imageURL from '../DailyDrive.jpg';
+import { DataContext } from '../../context/DataProvider';
+import { useNavigate } from 'react-router-dom';
 
 const Component = styled(Box)`
   width: 400px;
@@ -51,7 +53,6 @@ const SignUpButton = styled(Button)`
     box-shadow: 0 2px 4px 0 rgb(0 0 0 /0.4);
 `;
 
-
 const signupInitialValues = {
     name: "",
     email: "",
@@ -63,11 +64,14 @@ const logInitialValues = {
     password: " "
 }
 
-const Login = () => {
+const Login = ({ isUserAuthenticated }) => {
     const [account, toggleAccount] = useState('login');
     const [signUp, setSignUp] = useState(signupInitialValues);
     const [login, setLogin] = useState(logInitialValues);
     const [showPassword, setShowPassword] = useState(false);
+
+    const { setAccount } = useContext(DataContext);
+    const navigate = useNavigate();
 
     const toggleSignup = () => {
         account === 'login' ? toggleAccount('signUp') : toggleAccount('login');
@@ -75,8 +79,6 @@ const Login = () => {
 
     const onInputChange = (e) => {
         setSignUp({ ...signUp, [e.target.name]: e.target.value });
-
-        // console.log(e.target.name, e.target.value);
     }
 
     const onValueChange = (e) => {
@@ -98,13 +100,20 @@ const Login = () => {
             });
 
             if (responsePost.ok || responsePost.status === 201) {
-                const responseData = await responsePost.json(); // Parse the response body as JSON
+                const responseData = await responsePost.json();
 
-                // Assuming responseData has properties accessToken and refreshToken
-                sessionStorage.setItem('accessToken', `Bearer ${responseData.accessToken}`);
-                sessionStorage.setItem('refreshToken', `Bearer ${responseData.refreshToken}`);
+                // console.log("Response Data:", responseData);
 
-                console.log("Login successful");
+                if (responseData.email) {
+                    setAccount({ email: responseData.email });
+                    console.log("Login successful");
+                } else {
+                    console.log("Invalid response data or missing email property");
+                }
+
+                isUserAuthenticated(true);
+
+                navigate('/');
             } else {
                 console.log("User does not exist");
             }
@@ -115,14 +124,15 @@ const Login = () => {
 
     const signUpUser = async () => {
         try {
-            //Fetch users
+            // // Fetch users
             const responseGet = await fetch(`http://localhost:8000/auth/users`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
                 },
             });
-            //Register a new user
+
+            // Register a new user
             const responsePost = await fetch(`http://localhost:8000/auth/register`, {
                 method: "POST",
                 headers: {
@@ -131,13 +141,11 @@ const Login = () => {
                 body: JSON.stringify(signUp),
             });
 
-            //console.log(responsePost);
             if (responsePost.ok || responsePost.status === 201) {
                 console.log('User created successfully');
             } else {
                 console.error('Error creating user');
             }
-
         } catch (error) {
             console.log("register", error);
         }
@@ -147,70 +155,87 @@ const Login = () => {
         <Component>
             <Box>
                 <Image src={imageURL} alt="login" />
-                {
-                    account === "login" ?
-                        <Centre>
-                            <TextField variant="standard" onChange={(e) => onValueChange(e)} label="E-mail" name="email" InputLabelProps={{ style: { color: '#878787' } }} />
-                            <TextField
-                                variant="standard"
-                                onChange={(e) => onValueChange(e)}
-                                label="Password"
-                                name="password"
-                                type={showPassword ? 'text' : 'password'}
-                                InputLabelProps={{ style: { color: '#878787' } }}
-                                InputProps={{
-                                    endAdornment: (
-                                        <IconButton
-                                            edge="end"
-                                            onClick={togglePasswordVisibility}
-                                            sx={{ color: '#878787' }}
-                                        >
-                                            {showPassword ? (
-                                                <VisibilityIcon />
-                                            ) : (
-                                                <VisibilityOffIcon />
-                                            )}
-                                        </IconButton>
-                                    ),
-                                }}
-                            />
-                            <LoginButton variant="contained" onClick={() => logInUser()}>Login</LoginButton>
-                            <Para> or </Para>
-                            <SignUpButton onClick={() => toggleSignup()}>Create an account</SignUpButton>
-                        </Centre>
-                        :
-                        <Centre>
-                            <TextField variant="standard" onChange={(e) => onInputChange(e)} name="name" label="Name" InputLabelProps={{ style: { color: '#878787' } }} />
-                            <TextField variant="standard" onChange={(e) => onInputChange(e)} name="email" label="E-mail" InputLabelProps={{ style: { color: '#878787' } }} />
-                            <TextField
-                                variant="standard"
-                                onChange={(e) => onInputChange(e)}
-                                label="Password"
-                                name="password"
-                                type={showPassword ? 'text' : 'password'}
-                                InputLabelProps={{ style: { color: '#878787' } }}
-                                InputProps={{
-                                    endAdornment: (
-                                        <IconButton
-                                            edge="end"
-                                            onClick={togglePasswordVisibility}
-                                            sx={{ color: '#878787' }}
-                                        >
-                                            {showPassword ? (
-                                                <VisibilityIcon />
-                                            ) : (
-                                                <VisibilityOffIcon />
-                                            )}
-                                        </IconButton>
-                                    ),
-                                }}
-                            />
+                {account === "login" ? (
+                    <Centre>
+                        <TextField
+                            variant="standard"
+                            onChange={(e) => onValueChange(e)}
+                            label="E-mail"
+                            name="email"
+                            InputLabelProps={{ style: { color: '#878787' } }}
+                        />
+                        <TextField
+                            variant="standard"
+                            onChange={(e) => onValueChange(e)}
+                            label="Password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            InputLabelProps={{ style: { color: '#878787' } }}
+                            InputProps={{
+                                endAdornment: (
+                                    <IconButton
+                                        edge="end"
+                                        onClick={togglePasswordVisibility}
+                                        sx={{ color: '#878787' }}
+                                    >
+                                        {showPassword ? (
+                                            <VisibilityIcon />
+                                        ) : (
+                                            <VisibilityOffIcon />
+                                        )}
+                                    </IconButton>
+                                ),
+                            }}
+                        />
+                        <LoginButton variant="contained" onClick={() => logInUser()}>Login</LoginButton>
+                        <Para> or </Para>
+                        <SignUpButton onClick={() => toggleSignup()}>Create an account</SignUpButton>
+                    </Centre>
+                ) : (
+                    <Centre>
+                        <TextField
+                            variant="standard"
+                            onChange={(e) => onInputChange(e)}
+                            name="name"
+                            label="Name"
+                            InputLabelProps={{ style: { color: '#878787' } }}
+                        />
+                        <TextField
+                            variant="standard"
+                            onChange={(e) => onInputChange(e)}
+                            name="email"
+                            label="E-mail"
+                            InputLabelProps={{ style: { color: '#878787' } }}
+                        />
+                        <TextField
+                            variant="standard"
+                            onChange={(e) => onInputChange(e)}
+                            label="Password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            InputLabelProps={{ style: { color: '#878787' } }}
+                            InputProps={{
+                                endAdornment: (
+                                    <IconButton
+                                        edge="end"
+                                        onClick={togglePasswordVisibility}
+                                        sx={{ color: '#878787' }}
+                                    >
+                                        {showPassword ? (
+                                            <VisibilityIcon />
+                                        ) : (
+                                            <VisibilityOffIcon />
+                                        )}
+                                    </IconButton>
+                                ),
+                            }}
+                        />
 
-                            <LoginButton onClick={() => signUpUser()} variant="contained">Sign Up</LoginButton>
-                            <Para> or </Para>
-                            <SignUpButton onClick={() => toggleSignup()}>Already have an account</SignUpButton>
-                        </Centre>
-                }
+                        <LoginButton onClick={() => signUpUser()} variant="contained">Sign Up</LoginButton>
+                        <Para> or </Para>
+                        <SignUpButton onClick={() => toggleSignup()}>Already have an account</SignUpButton>
+                    </Centre>
+                )}
             </Box>
         </Component>
     );
