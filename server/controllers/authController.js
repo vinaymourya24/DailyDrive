@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const Token = require('../models/token');
+const post = require('../models/post');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -76,4 +77,23 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { home, register, user, login };
+const createPost = async (req, res) => {
+    try {
+        console.log('POST /auth/posts route reached');
+        const { title, description, picture, email, categories } = req.body;
+
+        if (!title || !description || !picture || !email || !categories) {
+            return res.status(400).json({ error: 'All fields are required.' });
+        }
+
+        const newPost = new Post({ title, description, picture, email, categories });
+        await newPost.save();
+
+        res.status(201).json({ message: 'Post created successfully' });
+    } catch (error) {
+        console.error('Error creating post:', error);
+        res.status(500).json({ error: 'Error creating post' });
+    }
+};
+
+module.exports = { home, register, user, login, createPost };
